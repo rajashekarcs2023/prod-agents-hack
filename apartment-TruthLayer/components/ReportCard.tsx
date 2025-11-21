@@ -5,9 +5,11 @@ import { ShieldCheck, AlertTriangle, Home, DollarSign, CheckCircle, Ban, Calenda
 interface ReportCardProps {
   report: TruthReport | null;
   loading: boolean;
+  onAction?: (action: 'shortlist' | 'blacklist' | 'schedule_tour' | 'share') => void;
+  onFeedback?: (feedback: 'thumbs_up' | 'thumbs_down') => void;
 }
 
-export const ReportCard: React.FC<ReportCardProps> = ({ report, loading }) => {
+export const ReportCard: React.FC<ReportCardProps> = ({ report, loading, onAction, onFeedback }) => {
   if (loading) {
     return (
       <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-zinc-600 gap-4 bg-zinc-900/30 border border-zinc-800 rounded-xl p-8 backdrop-blur-sm">
@@ -115,19 +117,31 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, loading }) => {
 
       {/* Actions Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
-         <button className="bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all">
+         <button 
+            onClick={() => onAction?.('shortlist')}
+            className="bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all"
+         >
             <CheckCircle className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Shortlist</span>
          </button>
-         <button className="bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all">
+         <button 
+            onClick={() => onAction?.('schedule_tour')}
+            className="bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all"
+         >
             <Calendar className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Schedule Tour</span>
          </button>
-         <button className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all">
+         <button 
+            onClick={() => onAction?.('share')}
+            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all"
+         >
             <ExternalLink className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Share Report</span>
          </button>
-         <button className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all">
+         <button 
+            onClick={() => onAction?.('blacklist')}
+            className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 p-3 rounded-lg flex flex-col items-center justify-center gap-1 transition-all"
+         >
             <Ban className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Blacklist</span>
          </button>
@@ -137,8 +151,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, loading }) => {
       <div className="flex items-center justify-between bg-zinc-950 rounded-lg p-3 border border-zinc-800/50">
          <span className="text-[10px] text-zinc-600">Help RentCheck improve this analysis:</span>
          <div className="flex gap-2">
-            <button className="p-1.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-emerald-400 transition-colors"><ThumbsUp className="w-3.5 h-3.5" /></button>
-            <button className="p-1.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-red-400 transition-colors"><ThumbsDown className="w-3.5 h-3.5" /></button>
+            <button 
+               onClick={() => onFeedback?.('thumbs_up')}
+               className="p-1.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-emerald-400 transition-colors"
+            >
+               <ThumbsUp className="w-3.5 h-3.5" />
+            </button>
+            <button 
+               onClick={() => onFeedback?.('thumbs_down')}
+               className="p-1.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-red-400 transition-colors"
+            >
+               <ThumbsDown className="w-3.5 h-3.5" />
+            </button>
          </div>
       </div>
 

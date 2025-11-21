@@ -5,7 +5,7 @@ import { ReportCard } from './components/ReportCard';
 import { LearningPanel } from './components/LearningPanel';
 import { StatusBadge } from './components/StatusBadge';
 import { ActionFeed } from './components/ActionFeed';
-import { generateAgentStep } from './services/geminiService';
+import { generateAgentStep, realAgentService } from './services/realAgentService';
 import { Search, Shield, Globe, Terminal as TerminalIcon, Play, Square, Link as LinkIcon, Brain, Zap, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEFAULT_URL = "https://www.zillow.com/homedetails/123-Market-St-San-Francisco-CA/fake";
@@ -74,7 +74,8 @@ const App: React.FC = () => {
         stateRef.current = nextState;
         setCurrentState(nextState);
 
-        if (process.env.API_KEY) {
+        // Always try real integration first, fallback to offline simulation
+        try {
           const result = await generateAgentStep(url, nextState, preferences);
           
           let source: LogEntry['source'] = 'SYSTEM';
@@ -100,7 +101,9 @@ const App: React.FC = () => {
                 }, index * 1200);
              });
           }
-        } else {
+        } catch (error) {
+          console.error('Real agent service failed, falling back to offline mode:', error);
+          addLog('SYSTEM', 'Using offline mode - real integrations not configured', 'warning');
           simulateOfflineStep(nextState);
         }
       } else {
@@ -115,10 +118,19 @@ const App: React.FC = () => {
       runningRef.current = true;
       setReport(null); 
       setActions([]);
+      
+      // Reset the real agent service for new analysis
+      realAgentService.reset();
+      
       if (stateRef.current === AgentState.IDLE) {
          addLog('SYSTEM', `Initialization: RentCheck Agent v2.1`, 'info');
          addLog('SYSTEM', `Target: ${url}`, 'info');
          addLog('SYSTEM', `Profile: Safety Priority (${preferences.priorities.safety}/5)`, 'info');
+         if (realAgentService.hasRealIntegrations()) {
+           addLog('SYSTEM', 'Real integrations enabled: Parallel Web + Lightpanda', 'success');
+         } else {
+           addLog('SYSTEM', 'Demo mode: Add API keys to .env for real data', 'warning');
+         }
       }
       runLoop();
     } else {
@@ -130,6 +142,54 @@ const App: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [isRunning, url, preferences]);
+
+  // Action handlers for report card buttons
+  const handleReportAction = async (action: 'shortlist' | 'blacklist' | 'schedule_tour' | 'share') => {
+    try {
+      addLog('POSTMAN', `Executing user action: ${action}`, 'info');
+      
+      const userInfo = {
+        name: 'Demo User',
+        email: 'demo@example.com',
+        phone: '+1234567890',
+        priorities: preferences.priorities
+      };
+
+      const resultActions = await realAgentService.executeUserAction(action, null, report, userInfo);
+      
+      // Add the new actions to the existing actions
+      setActions(prev => [...prev, ...resultActions]);
+      
+      // Animate the action execution
+      resultActions.forEach((resultAction, index) => {
+        setTimeout(() => {
+          setActions(prev => prev.map(a => 
+            a.id === resultAction.id ? { ...a, status: 'EXECUTING' } : a
+          ));
+          
+          setTimeout(() => {
+            setActions(prev => prev.map(a => 
+              a.id === resultAction.id ? { ...a, status: 'COMPLETED' } : a
+            ));
+            addLog('POSTMAN', `Action completed: ${resultAction.description}`, 'success');
+          }, 1500);
+        }, index * 500);
+      });
+
+    } catch (error) {
+      addLog('POSTMAN', `Action failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    }
+  };
+
+  const handleFeedback = (feedback: 'thumbs_up' | 'thumbs_down') => {
+    realAgentService.processFeedback(feedback);
+    
+    // Update source weights display
+    const updatedWeights = realAgentService.getSourceWeights();
+    setWeights(updatedWeights);
+    
+    addLog('SYSTEM', `Feedback processed: ${feedback === 'thumbs_up' ? 'positive' : 'negative'} - updating learning weights`, 'info');
+  };
 
   const simulateOfflineStep = (state: AgentState) => {
     // Offline Fallback for Demo purposes if API key is missing
@@ -267,7 +327,12 @@ const App: React.FC = () => {
             </div>
 
             {/* THE MAIN VALUE: TRUTH REPORT */}
-            <ReportCard report={report} loading={isRunning && currentState !== AgentState.IDLE && currentState !== AgentState.LEARNING && !report} />
+            <ReportCard 
+              report={report} 
+              loading={isRunning && currentState !== AgentState.IDLE && currentState !== AgentState.LEARNING && !report}
+              onAction={handleReportAction}
+              onFeedback={handleFeedback}
+            />
 
         </div>
 
