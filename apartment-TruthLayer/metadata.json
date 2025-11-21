@@ -1,0 +1,5 @@
+{
+  "name": "RentCheck Agent",
+  "description": "An autonomous agent that uncovers the truth behind apartment listings using Lightpanda, Parallel, and Sanity.",
+  "requestFramePermissions": []
+}
